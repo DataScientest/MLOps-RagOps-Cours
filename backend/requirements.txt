@@ -11,6 +11,6 @@ pydantic==2.8.2
 python-dotenv==1.0.1
 orjson==3.10.7
 anyio==4.4.0
-langchain-text-splitters==0.2.2
+langchain-text-splitters==0.3.9
 python-multipart
 pypdf==5.0.0 
