@@ -33,8 +33,9 @@ def build_metrics(llm=None, embeddings=None) -> Dict[str, Any]:
     """Create the RAGAS metrics, by default on the LiteLLM proxy (Groq LLM + TEI embeddings)."""
     if llm is None or embeddings is None:
         # OpenAI-compatible client pointing to the LiteLLM proxy
-        client = AsyncOpenAI(base_url=settings.LITELLM_URL, api_key=settings.PROXY_KEY or "dummy")
-        llm = llm or llm_factory(settings.LITELLM_MODEL, client=client)
+        client = AsyncOpenAI(base_url=settings.LITELLM_URL, api_key=settings.PROXY_KEY or "dummy", max_retries=5)
+        # gpt-oss is a reasoning model: leave room for reasoning tokens before the JSON answer
+        llm = llm or llm_factory(settings.LITELLM_MODEL, client=client, max_tokens=4096)
         embeddings = embeddings or embedding_factory(
             "openai", model=settings.EMBEDDING_MODEL_NAME, client=client
         )
@@ -61,10 +62,9 @@ async def score_samples(samples: List[Dict[str, Any]], metrics: Dict[str, Any]) 
 
     rows = []
     for sample in samples:
-        values = await asyncio.gather(
-            *(score(metric, sample, METRIC_INPUTS[name]) for name, metric in metrics.items())
-        )
-        rows.append({**sample, **dict(zip(metrics, values))})
+        # One metric at a time: free LLM tiers are rate limited (tokens per minute)
+        values = {name: await score(metric, sample, METRIC_INPUTS[name]) for name, metric in metrics.items()}
+        rows.append({**sample, **values})
     return rows
 
 
@@ -103,7 +103,7 @@ async def run_evaluation(testset: List[Dict[str, Any]], metrics: Optional[Dict[s
             samples.append({
                 'user_input': question,
                 'response': rag_output['answer'],
-                'retrieved_contexts': [c['content'] for c in rag_output['chunks']], # List of retrieved text chunks
+                'retrieved_contexts': rag_output['contexts'], # Full text of the retrieved chunks
                 'reference': item['ground_truth'] # The expected correct answer
             })
 

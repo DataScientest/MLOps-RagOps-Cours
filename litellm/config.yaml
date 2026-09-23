@@ -6,6 +6,14 @@ model_list:
     litellm_params:
       model: groq/openai/gpt-oss-20b
       api_key: os.environ/GROQ_API_KEY
+      reasoning_effort: low  # gpt-oss is a reasoning model: keep most of max_tokens for the answer
+
+  # Fallback chat model on Groq (separate rate limits)
+  - model_name: groq-gpt-oss-120b
+    litellm_params:
+      model: groq/openai/gpt-oss-120b
+      api_key: os.environ/GROQ_API_KEY
+      reasoning_effort: low
 
   # Local embeddings served by TEI (OpenAI-compatible embeddings API)
   - model_name: local-embeddings
@@ -36,4 +44,4 @@ prompt_injection_params:
 # Routing / fallbacks
 router_settings:
   fallbacks:
-    - "groq-gpt-oss": []
+    - "groq-gpt-oss": ["groq-gpt-oss-120b"]

@@ -31,7 +31,7 @@ class JSONFormatter(logging.Formatter):
                          "pathname","filename","module","exc_info",
                          "exc_text","stack_info","lineno","funcName",
                          "created","msecs","relativeCreated","thread",
-                         "threadName","processName","process")
+                         "threadName","processName","process","taskName")
         }
         if extras:
             payload["extra"] = extras

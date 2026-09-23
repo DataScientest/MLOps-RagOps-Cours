@@ -22,7 +22,7 @@ async def ingest_pdf_batch(files: List[UploadFile] = File(...), metadata: Option
                 tmp_file.write(content)
                 tmp_path = tmp_file.name
 
-            documents = await pdf_processor.process_pdf(tmp_path, metadata)
+            documents = await pdf_processor.process_pdf(tmp_path, metadata, source_name=file.filename)
             ragops_docs = [
             Document(id=doc.metadata["chunk_id"], text=doc.page_content, metadata=doc.metadata) for doc in documents]
             result = await ingest_documents(ragops_docs)

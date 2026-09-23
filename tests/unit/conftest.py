@@ -121,22 +121,25 @@ def meili(monkeypatch):
 
     suffix = uuid.uuid4().hex[:8]
     uids = {"MEILI_INDEX": f"test_documents_{suffix}", "CHUNKS_INDEX": f"test_chunks_{suffix}"}
-    index_settings = {
-        "embedders": {"default": {"source": "userProvided", "dimensions": settings.EMBED_DIM}},
+    common = {
         "searchableAttributes": ["content", "title"],
-        "displayedAttributes": ["id", "content", "title", "metadata", "source", "tags"],
+        "displayedAttributes": ["id", "content", "title", "metadata", "source", "tags",
+                                "document_id", "chunk_index", "total_chunks", "page_number"],
         "filterableAttributes": ["source", "tags", "metadata.sha", "metadata.lang"],
         "sortableAttributes": ["created_at", "updated_at"],
     }
+    index_settings = {
+        "MEILI_INDEX": common,  # whole documents: full-text only
+        "CHUNKS_INDEX": {"embedders": {"default": {"source": "userProvided", "dimensions": settings.EMBED_DIM}},
+                         **common},
+    }
     for attr, uid in uids.items():
         client.create_index(uid, {"primaryKey": "id"})
-        client.index(uid).update_settings(index_settings)
+        client.index(uid).update_settings(index_settings[attr])
         wait_for_index(client, uid)
         monkeypatch.setattr(settings, attr, uid)
 
-    # Only the chunks index is awaited: whole documents are added without `_vectors` while the
-    # `documents` index declares a userProvided embedder, so Meilisearch rejects that task.
-    yield SimpleNamespace(client=client, wait=lambda: wait_for_index(client, uids["CHUNKS_INDEX"]), **uids)
+    yield SimpleNamespace(client=client, wait=lambda: [wait_for_index(client, u) for u in uids.values()], **uids)
 
     for uid in uids.values():
         client.delete_index(uid)

@@ -66,7 +66,8 @@ class FakeRagasEmbedding(BaseRagasEmbedding):
 @pytest.fixture
 def fake_rag(monkeypatch):
     async def _rag_search(query, k, use_embeddings=True):
-        return {"answer": f"Answer about: {query}", "chunks": [{"content": CONTEXTS[query]}]}
+        return {"answer": f"Answer about: {query}", "chunks": [{"content": CONTEXTS[query][:300]}],
+                "contexts": [CONTEXTS[query]]}
 
     monkeypatch.setattr(ragas_eval, "rag_search", _rag_search)
 
