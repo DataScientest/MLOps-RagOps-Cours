@@ -36,7 +36,7 @@
       "title": "5xx Error Rate (%)",
       "targets": [
         {
-          "expr": "100 * sum(rate(http_requests_total{status=~\"5..\"}[5m])) / sum(rate(http_requests_total[5m]))",
+          "expr": "100 * (sum(rate(http_requests_total{status=~\"5..\"}[5m])) or vector(0)) / sum(rate(http_requests_total[5m]))",
           "refId": "A"
         }
       ],

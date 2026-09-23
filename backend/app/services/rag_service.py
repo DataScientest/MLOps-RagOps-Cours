@@ -64,8 +64,7 @@ async def rag_search(query: str, k: int, use_embeddings: bool = True) -> Dict[st
             "cached": False,
             "search_method": search_method
         }
-        set_json(cache_key, {**result, "cached": False}, 600)
-        return result
+        return result  # not cached: the index may be filled a few seconds later
 
     selected = _select_chunks(hits, k)
 
@@ -96,11 +95,11 @@ async def rag_search(query: str, k: int, use_embeddings: bool = True) -> Dict[st
             "cached": False,
             "search_method": search_method
         }
-        set_json(cache_key, {**result, "cached": False}, 600)
         return result
 
     context = "\n".join(context_parts)
     answer = await generate_rag_answer(query, context, search_method)
+    answered = not answer.startswith("I found")  # generate_rag_answer fallback messages
 
     result = {
         "answer": answer,
@@ -110,5 +109,6 @@ async def rag_search(query: str, k: int, use_embeddings: bool = True) -> Dict[st
         "cached": False,
         "search_method": search_method
     }
-    set_json(cache_key, {**result, "cached": False}, 600)
+    if answered:  # never cache an LLM failure
+        set_json(cache_key, {**result, "cached": False}, 600)
     return result

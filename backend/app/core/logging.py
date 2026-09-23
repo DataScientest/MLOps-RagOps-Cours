@@ -3,7 +3,7 @@ import logging
 import os
 import json
 from logging import Logger, LogRecord
-from datetime import datetime
+from datetime import datetime, timezone
 
 _LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 
@@ -11,7 +11,7 @@ class JSONFormatter(logging.Formatter):
     def format(self, record: LogRecord) -> str:
         # Basic record fields
         payload = {
-            "timestamp": datetime.utcfromtimestamp(record.created).isoformat() + "Z",
+            "timestamp": datetime.fromtimestamp(record.created, timezone.utc).isoformat().replace("+00:00", "Z"),
             "level": record.levelname,
             "logger": record.name,
             "message": record.getMessage(),

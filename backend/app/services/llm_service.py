@@ -12,7 +12,7 @@ async def generate_chat_completion(messages: List[ChatMessage], model: Optional[
             "model": model or settings.LITELLM_MODEL,
             "messages": [{"role": m.role, "content": m.content} for m in messages],
             "temperature": temperature,
-            "max_tokens": 1000
+            "max_tokens": 2000
         }
         r = await client.post(f"{settings.PROXY_URL}/v1/chat/completions", json=payload, headers={"Content-Type": "application/json"})
         r.raise_for_status()
