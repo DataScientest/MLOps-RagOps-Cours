@@ -2,15 +2,15 @@
 
 model_list:
   # Primary chat/completions model on Groq
-  - model_name: groq-llama3
+  - model_name: groq-gpt-oss
     litellm_params:
-      model: groq/llama-3.1-8b-instant
+      model: groq/openai/gpt-oss-20b
       api_key: os.environ/GROQ_API_KEY
 
   # Local embeddings served by TEI (OpenAI-compatible embeddings API)
   - model_name: local-embeddings
     litellm_params:
-      model: openai/text-embedding-ada-002  
+      model: openai/BAAI/bge-small-en-v1.5  # informative only: TEI serves the model set by --model-id in docker-compose.yml
       api_key: os.environ/GROQ_API_KEY
       api_base: "http://tei-embeddings:80" 
       custom_llm_provider: openai
@@ -36,4 +36,4 @@ prompt_injection_params:
 # Routing / fallbacks
 router_settings:
   fallbacks:
-    - "groq-llama3": []
+    - "groq-gpt-oss": []

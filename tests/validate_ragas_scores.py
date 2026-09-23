@@ -4,13 +4,8 @@ import sys
 import os
 import sys; sys.path.insert(0, "/app")
 import httpx
-from datasets import Dataset
-from ragas import evaluate
-from ragas.metrics import faithfulness, answer_relevancy, context_recall, context_precision
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from app.core.config import settings
 from app.core.logging import logger
-from app.services.rag_service import rag_search
+from app.eval.ragas_eval import run_evaluation
 
 TEST_DOCS = [
     {"id": "Neural Networks", "text": "Neural networks are computing systems inspired by biological neural networks. They consist of interconnected nodes called neurons."},
@@ -39,28 +34,15 @@ async def ingest_docs():
 
 async def run_validation():
     logger.info("Running RAGAS validation...")
-    llm = ChatOpenAI(base_url=settings.LITELLM_URL, model=settings.LITELLM_MODEL, api_key="dummy")
-    emb = OpenAIEmbeddings(model=settings.EMBEDDING_MODEL_NAME, base_url=settings.TEI_EMBEDDINGS_URL, api_key="dummy")
-    results = []
-    for tc in TEST_CASES:
-        try:
-            rag_out = await rag_search(query=tc["question"], k=3, use_embeddings=True)
-            contexts = [c["content"] for c in rag_out["chunks"]]
-            results.append({"question": tc["question"], "answer": rag_out["answer"], "contexts": contexts, "ground_truth": tc["ground_truth"]})
-        except Exception as e:
-            logger.error(f"Error: {e}")
-            results.append({"question": tc["question"], "answer": "Error", "contexts": [], "ground_truth": tc["ground_truth"]})
-    data = {k: [r[k] for r in results] for k in results[0].keys()}
-    dataset = Dataset.from_dict(data)
-    score = evaluate(dataset, metrics=[faithfulness, answer_relevancy, context_recall, context_precision], llm=llm, embeddings=emb, raise_exceptions=False)
+    rows, avg = await run_evaluation(TEST_CASES)
     print("\nRAGAS SCORES")
-    print(score.to_pandas().to_string())
-    avg = score.to_pandas()[["faithfulness", "answer_relevancy", "context_recall", "context_precision"]].mean()
+    for row in rows:
+        print(row["user_input"], {k: round(row[k], 4) for k in avg})
     print("\nAVERAGE SCORES")
     for k, v in avg.items():
         print(f"{k}: {v:.4f}")
     checks = 0
-    if all(0 <= avg[k] <= 1 for k in avg.index):
+    if all(0 <= v <= 1 for v in avg.values()):
         print("✓ All scores in valid range")
         checks += 1
     if avg["faithfulness"] > 0 or avg["answer_relevancy"] > 0:
