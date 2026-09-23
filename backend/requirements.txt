@@ -9,7 +9,7 @@ langchain-openai==1.6.4
 langchain-text-splitters==1.1.2
 langgraph==1.2.12
 langsmith==0.14.0
-# openai 3.3.0 is the newest release compatible with ragas 0.4.3 (instructor 1.17 requires jiter<0.15)
+# openai 3.3.0: newest release compatible with ragas 0.4.3 (instructor 1.17 requires jiter<0.15), same pin on every branch
 openai==3.3.0
 pydantic==2.13.5
 python-dotenv==1.2.3

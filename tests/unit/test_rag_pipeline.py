@@ -3,6 +3,7 @@ from fastapi.testclient import TestClient
 
 from app.core.config import settings
 from app.main import app
+from app.services.embeddings import _request_embeddings as REAL_REQUEST_EMBEDDINGS
 
 from .conftest import FAKE_ANSWER
 
@@ -70,3 +71,71 @@ def test_rag_endpoint_with_fake_llm(client, ingested, fake_llm):
     assert call["url"].endswith("/v1/chat/completions")
     assert call["payload"]["model"] == settings.LITELLM_MODEL
     assert "Context:" in call["payload"]["messages"][-1]["content"]
+    # full chunk texts are returned for the RAGAS evaluation
+    assert body["chunks"] and all(c in {d["text"] for d in DOCS} for c in call_contexts(client))
+
+
+def call_contexts(client):
+    from app.services.rag_service import rag_search
+    import asyncio
+    return asyncio.run(rag_search("What are autoencoders?", 2))["contexts"]
+
+
+def test_direct_search_on_documents_index(client, ingested):
+    r = client.post("/search-direct", json={"query": "matrix eigenvectors", "k": 3})
+    assert r.status_code == 200, r.text
+    assert r.json()["total"] >= 1
+    assert r.json()["hits"][0]["id"] == "doc-linear-algebra"
+
+
+def test_stats(client, ingested):
+    r = client.get("/stats")
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["documents"]["count"] == 3
+    assert body["chunks"]["count"] == 3
+    assert body["chunks"]["embeddings"] == 3
+
+
+def test_pdf_ingestion_embeds_every_chunk_and_ids_are_stable(client, meili):
+    from pathlib import Path
+    pdf = Path(__file__).resolve().parents[2] / "pdf_files" / "linear_factor_models.pdf"
+    first = client.post("/ingest-pdf", files={"file": (pdf.name, pdf.read_bytes(), "application/pdf")})
+    assert first.status_code == 200, first.text
+    body = first.json()
+    assert body["chunks_created"] > 32  # more than one TEI batch
+    assert body["embeddings_generated"] == body["chunks_created"]
+    meili.wait()
+    second = client.post("/ingest-pdf", files={"file": (pdf.name, pdf.read_bytes(), "application/pdf")})
+    meili.wait()
+    # same file name -> same chunk ids -> no duplicates
+    stats = meili.client.index(meili.CHUNKS_INDEX).get_stats()
+    assert stats.number_of_documents == body["chunks_created"] == second.json()["chunks_created"]
+
+
+def test_embeddings_are_requested_in_batches_of_32(monkeypatch):
+    """TEI rejects more than 32 inputs per request: _request_embeddings must split the calls."""
+    import asyncio
+    import json
+    from types import SimpleNamespace
+
+    import httpx
+
+    import app.services.embeddings as embeddings
+
+    sizes = []
+
+    def handler(request):
+        payload = json.loads(request.content)
+        sizes.append(len(payload["input"]))
+        assert payload["model"] == settings.EMBEDDING_MODEL_NAME
+        return httpx.Response(200, json={"data": [{"embedding": [0.0] * settings.EMBED_DIM} for _ in payload["input"]]})
+
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(embeddings, "httpx", SimpleNamespace(
+        AsyncClient=lambda *a, **kw: real_client(*a, transport=httpx.MockTransport(handler), **kw)))
+    # the autouse fixture replaces _request_embeddings: call the real implementation saved at import time
+    data = asyncio.run(REAL_REQUEST_EMBEDDINGS([f"text {i}" for i in range(70)]))
+
+    assert sizes == [32, 32, 6]
+    assert len(data) == 70

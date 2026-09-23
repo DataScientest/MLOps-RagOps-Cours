@@ -70,7 +70,7 @@ async def rag_search(query: str, k: int, use_embeddings: bool = True) -> Dict[st
     selected = _select_chunks(hits, k)
 
     # Build LLM context + output chunk list
-    context_parts, chunks = [], []
+    context_parts, chunks, contexts = [], [], []
     for i, h in enumerate(selected):
         content = h.get("content") or h.get("text", "")
         title = h.get("title", h.get("metadata", {}).get("title", f"Chunk {i+1}"))
@@ -79,6 +79,7 @@ async def rag_search(query: str, k: int, use_embeddings: bool = True) -> Dict[st
         if not content:
             continue
         context_parts.append(f"Document: {title} (Chunk {idx})\nContent: {content}\n")
+        contexts.append(content)  # full text, used by the RAGAS evaluation
         chunks.append({
             "id": h.get("id", f"chunk-{i}"),
             "document_id": doc_id,
@@ -104,6 +105,7 @@ async def rag_search(query: str, k: int, use_embeddings: bool = True) -> Dict[st
     result = {
         "answer": answer,
         "chunks": chunks,
+        "contexts": contexts,
         "total_chunks_found": len(hits),
         "cached": False,
         "search_method": search_method
