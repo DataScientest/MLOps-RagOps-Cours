@@ -29,7 +29,7 @@ os.environ["MEILI_URL"] = os.getenv("MEILI_TEST_URL", "http://localhost:7700")
 os.environ.setdefault("MEILI_KEY", _dotenv.get("MEILI_KEY") or "password123")
 os.environ.setdefault("REDIS_URL", "redis://localhost:6379/0")  # never reached: fakeredis
 os.environ.setdefault("PROXY_URL", "http://litellm.test:4000")  # never reached: fake LLM / embeddings
-os.environ.setdefault("LITELLM_MODEL", "groq-llama3")
+os.environ.setdefault("LITELLM_MODEL", "groq-gpt-oss")
 os.environ.setdefault("EMBEDDING_MODEL_NAME", "local-embeddings")
 os.environ.setdefault("EMBED_DIM", "384")
 

@@ -15,7 +15,7 @@ class Settings:
     EMBED_DIM: int = int(os.getenv("EMBED_DIM", "384"))
 
     # Model aliases declared in litellm/config.yaml
-    LITELLM_MODEL: str = os.getenv("LITELLM_MODEL", "groq-llama3")
+    LITELLM_MODEL: str = os.getenv("LITELLM_MODEL", "groq-gpt-oss")
     EMBEDDING_MODEL_NAME: str = os.getenv("EMBEDDING_MODEL_NAME", "local-embeddings")
     
 settings = Settings()

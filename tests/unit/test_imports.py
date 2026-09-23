@@ -14,6 +14,6 @@ def test_import_all_backend_modules():
 def test_models_are_configurable_by_env():
     from app.core.config import settings
 
-    assert settings.LITELLM_MODEL == "groq-llama3"
+    assert settings.LITELLM_MODEL == "groq-gpt-oss"
     assert settings.EMBEDDING_MODEL_NAME == "local-embeddings"
     assert settings.EMBED_DIM == 384
