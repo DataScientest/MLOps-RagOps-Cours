@@ -6,18 +6,28 @@ from app.utils.hashing import md5_hash
 from app.utils.cache import get_json, set_json
 
 _CACHE_TTL = 3600  # seconds
+MAX_BATCH_SIZE = 32  # TEI rejects requests with more than 32 inputs
 
 async def _request_embeddings(texts: List[str]) -> Optional[List[dict]]:
-    async with httpx.AsyncClient(timeout=60.0) as client:
-        r = await client.post(
-            f"{settings.PROXY_URL}/v1/embeddings",
-            json={"model": settings.EMBEDDING_MODEL_NAME, "input": texts},
-            headers={"Content-Type": "application/json"}
-        )
-        if r.status_code != 200:
-            logger.error(f"Embedding request failed: {r.status_code} - {r.text}")
-            return None
-        return r.json().get("data", [])
+    all_data: List[dict] = []
+
+    # Split into batches
+    for i in range(0, len(texts), MAX_BATCH_SIZE):
+        batch = texts[i:i + MAX_BATCH_SIZE]
+
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            r = await client.post(
+                f"{settings.PROXY_URL}/v1/embeddings",
+                json={"model": settings.EMBEDDING_MODEL_NAME, "input": batch},
+                headers={"Content-Type": "application/json"}
+            )
+            if r.status_code != 200:
+                logger.error(f"Embedding request failed: {r.status_code} - {r.text}")
+                return None
+            batch_data = r.json().get("data", [])
+            all_data.extend(batch_data)
+
+    return all_data
 
 async def generate_embeddings(texts: List[str]) -> List[List[float]]:
     """
