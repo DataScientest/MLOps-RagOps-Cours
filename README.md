@@ -146,7 +146,7 @@ MEILI_INDEX=documents
 EMBED_DIM=384
 
 # LLM Provider Configuration  
-LITELLM_KEY=your_proxy_key_here
+PROXY_KEY=your_proxy_key_here
 GROQ_API_KEY=your_groq_api_key_here
 
 # Optional: Additional LLM providers
@@ -474,7 +474,7 @@ model_list:
    ```bash
    # Use strong, unique keys
    MEILI_KEY=$(openssl rand -hex 32)
-   LITELLM_KEY=$(openssl rand -hex 32)
+   PROXY_KEY=$(openssl rand -hex 32)
    
    # Restrict network access
    # Configure firewall rules
