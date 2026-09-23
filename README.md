@@ -142,7 +142,7 @@ model_list:
   # Local embeddings served by TEI (OpenAI-compatible embeddings API)
   - model_name: local-embeddings
     litellm_params:
-      model: openai/text-embedding-ada-002 
+      model: openai/BAAI/bge-small-en-v1.5
       api_key: os.environ/GROQ_API_KEY
       api_base: "http://tei-embeddings:80"
       custom_llm_provider: openai
@@ -199,6 +199,19 @@ router_settings:
    ```
 
 ## 🧪 Testing & Validation
+
+### Offline test suite (pytest)
+
+The `tests/unit` suite runs without any API key: embeddings come from LangChain's
+`DeterministicFakeEmbedding`, the LLM is a `FakeListChatModel` behind a fake LiteLLM endpoint and Redis is
+replaced by `fakeredis`. Only Meilisearch must be running, because hybrid search is computed by Meilisearch.
+
+```bash
+pip install -r backend/requirements-dev.txt
+docker compose up -d meilisearch meili-init
+make unit-test        # = pytest (tests marked `live` are skipped by default)
+```
+
 ### Health Monitoring
 
 ```bash
@@ -353,7 +366,7 @@ Phase 3 will extend RAGOPS with advanced document processing capabilities and se
 ```
 
 ### Enhanced Data Flow
-1. **PDF Upload** → LangChain PyPDFLoader → Page extraction
+1. **PDF Upload** → pypdf `PdfReader` → Page extraction
 2. **Text Processing** → RecursiveCharacterTextSplitter → Smart chunking
 3. **Metadata Enrichment** → Page numbers, file info, structure
 4. **Existing Pipeline** → Embeddings → Meilisearch storage

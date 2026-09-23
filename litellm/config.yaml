@@ -10,7 +10,7 @@ model_list:
   # Local embeddings served by TEI (OpenAI-compatible embeddings API)
   - model_name: local-embeddings
     litellm_params:
-      model: openai/text-embedding-ada-002 
+      model: openai/BAAI/bge-small-en-v1.5  # informative only: TEI serves the model set by --model-id in docker-compose.yml
       api_key: os.environ/GROQ_API_KEY
       api_base: "http://tei-embeddings:80" 
       custom_llm_provider: openai
