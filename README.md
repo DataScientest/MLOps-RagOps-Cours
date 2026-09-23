@@ -132,17 +132,27 @@ REDIS_URL=redis://redis:6379
 Edit `litellm/config.yaml` to customize:
 
 ```yaml
+# LiteLLM Configuration for RAG stack (CPU-only) using Redis cache + TEI embeddings + Groq LLM
+
 model_list:
   # Primary chat/completions model on Groq
   - model_name: groq-gpt-oss
     litellm_params:
       model: groq/openai/gpt-oss-20b
       api_key: os.environ/GROQ_API_KEY
+      reasoning_effort: low  # gpt-oss is a reasoning model: keep most of max_tokens for the answer
+
+  # Fallback chat model on Groq (separate rate limits)
+  - model_name: groq-gpt-oss-120b
+    litellm_params:
+      model: groq/openai/gpt-oss-120b
+      api_key: os.environ/GROQ_API_KEY
+      reasoning_effort: low
 
   # Local embeddings served by TEI (OpenAI-compatible embeddings API)
   - model_name: local-embeddings
     litellm_params:
-      model: openai/BAAI/bge-small-en-v1.5
+      model: openai/BAAI/bge-small-en-v1.5  # informative only: TEI serves the model set by --model-id in docker-compose.yml
       api_key: os.environ/GROQ_API_KEY
       api_base: "http://tei-embeddings:80"
       custom_llm_provider: openai
@@ -166,7 +176,7 @@ prompt_injection_params:
 # Routing / fallbacks
 router_settings:
   fallbacks:
-    - "groq-gpt-oss": []
+    - "groq-gpt-oss": ["groq-gpt-oss-120b"]
 ```
 
 ## 📊 Service Architecture
