@@ -14,4 +14,4 @@ def get_json(key: str) -> Optional[Any]:
 
 def set_json(key: str, value: Any, ttl_seconds: int) -> None:
     """Set a JSON-serializable value with TTL."""
-    redis_client.setex(key, ttl_seconds, json.dumps(value))
+    redis_client.set(key, json.dumps(value), ex=ttl_seconds)

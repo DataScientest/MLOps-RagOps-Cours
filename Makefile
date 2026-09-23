@@ -1,4 +1,4 @@
-.PHONY: help build up down restart logs clean test demo validate
+.PHONY: help build up down restart logs clean test unit-test demo validate
 
 # Default target
 help:
@@ -12,6 +12,7 @@ help:
 	@echo "  logs       - Show service logs"
 	@echo "  clean      - Clean up Docker resources"
 	@echo "  test       - Run comprehensive test suite"
+	@echo "  unit-test  - Run offline pytest suite (fake LLM/embeddings)"
 	@echo "  demo       - Run feature demonstrations"
 	@echo "  validate   - Validate Phase 2 functionality"
 	@echo ""
@@ -50,6 +51,10 @@ clean:
 test:
 	@echo "🧪 Running comprehensive test suite..."
 	@python3 tests/test_phase2_comprehensive.py
+
+unit-test:
+	@echo "🧪 Running offline pytest suite..."
+	pytest
 
 # Development targets
 dev-logs:
