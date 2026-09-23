@@ -11,8 +11,9 @@ async def stats():
         doc_idx = meili_client.get_index(settings.MEILI_INDEX)
         chk_idx = meili_client.get_index(settings.CHUNKS_INDEX)
 
-        doc_stats = doc_idx.get_stats()   # Meilisearch returns dicts here
-        chk_stats = chk_idx.get_stats()
+        # Raw stats (dicts): the SDK's IndexStats object has no size/embeddings fields
+        doc_stats = meili_client.http.get(f"indexes/{doc_idx.uid}/stats")
+        chk_stats = meili_client.http.get(f"indexes/{chk_idx.uid}/stats")
 
         return {
             "documents": {

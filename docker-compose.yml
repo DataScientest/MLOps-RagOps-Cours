@@ -122,31 +122,6 @@ services:
     restart: "on-failure"
     profiles: ["manual"]  # only run manually when needed
 
-  prometheus:
-    image: prom/prometheus:latest
-    volumes:
-      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-    command:
-      - "--config.file=/etc/prometheus/prometheus.yml"
-    ports:
-      - "9090:9090"
-    restart: unless-stopped
-    depends_on:
-      - backend
-
-  grafana:
-    image: grafana/grafana:9.0.0
-    ports:
-      - "3000:3000"
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_USERS_ALLOW_SIGN_UP=false
-    volumes:
-      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
-    restart: unless-stopped
-    depends_on:
-      - prometheus
 
 volumes:
   meili_data:
