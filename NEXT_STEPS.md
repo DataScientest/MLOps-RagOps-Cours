@@ -33,7 +33,7 @@ Phase 3 will extend RAGOPS with advanced document processing capabilities and se
 ```
 
 ### Enhanced Data Flow
-1. **PDF Upload** → LangChain PyPDFLoader → Page extraction
+1. **PDF Upload** → pypdf `PdfReader` → Page extraction
 2. **Text Processing** → RecursiveCharacterTextSplitter → Smart chunking
 3. **Metadata Enrichment** → Page numbers, file info, structure
 4. **Existing Pipeline** → Embeddings → Meilisearch storage
@@ -48,9 +48,9 @@ Phase 3 will extend RAGOPS with advanced document processing capabilities and se
 #### 1. **PDF Processor Component**
 ```python
 # backend/app/pdf_processor.py
-from langchain.document_loaders import PyPDFLoader, UnstructuredPDFLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.schema import Document
+from pypdf import PdfReader
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_core.documents import Document
 import hashlib
 import os
 
@@ -65,8 +65,8 @@ class PDFProcessor:
     async def process_pdf(self, file_path: str, metadata: dict = None) -> List[Document]:
         """Process PDF and return chunked documents"""
         # Load PDF
-        loader = PyPDFLoader(file_path)
-        pages = loader.load()
+        reader = PdfReader(file_path)
+        pages = [page.extract_text() or "" for page in reader.pages]
         
         # Extract metadata
         pdf_metadata = {
@@ -78,8 +78,8 @@ class PDFProcessor:
         
         # Split into chunks
         chunks = []
-        for page_num, page in enumerate(pages):
-            page_chunks = self.text_splitter.split_text(page.page_content)
+        for page_num, page_text in enumerate(pages):
+            page_chunks = self.text_splitter.split_text(page_text)
             
             for chunk_idx, chunk_text in enumerate(page_chunks):
                 chunk_id = hashlib.md5(f"{file_path}_{page_num}_{chunk_idx}".encode()).hexdigest()
@@ -155,10 +155,10 @@ async def ingest_pdf(
 #### 3. **Dependencies Update**
 ```txt
 # Add to backend/requirements.txt
-langchain==0.1.0
-pypdf2==3.0.1
-unstructured==0.10.30
-python-multipart==0.0.6
+langchain-core==1.6.4
+langchain-text-splitters==1.1.2
+pypdf==6.19.0
+python-multipart==0.0.32
 ```
 
 ### Phase 3B: Search with Reranking
@@ -458,7 +458,7 @@ async def ingest_pdf(...):
 ### Quick Implementation (30 minutes)
 ```bash
 # 1. Add basic PDF support
-echo -e "\nlangchain==0.1.0\npypdf2==3.0.1\npython-multipart==0.0.6" >> backend/requirements.txt
+echo -e "\nlangchain-core==1.6.4\nlangchain-text-splitters==1.1.2\npypdf==6.19.0\npython-multipart==0.0.32" >> backend/requirements.txt
 
 # 2. Create simple PDF processor in main.py
 # 3. Add /ingest-pdf endpoint

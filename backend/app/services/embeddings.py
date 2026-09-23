@@ -18,7 +18,7 @@ async def _request_embeddings(texts: List[str]) -> Optional[List[dict]]:
         async with httpx.AsyncClient(timeout=60.0) as client:
             r = await client.post(
                 f"{settings.PROXY_URL}/v1/embeddings",
-                json={"model": "local-embeddings", "input": batch},
+                json={"model": settings.EMBEDDING_MODEL_NAME, "input": batch},
                 headers={"Content-Type": "application/json"}
             )
             if r.status_code != 200:

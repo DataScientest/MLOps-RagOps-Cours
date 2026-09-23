@@ -166,15 +166,15 @@ Edit `litellm/config.yaml` to customize:
 ```yaml
 model_list:
   # Primary chat model
-  - model_name: groq-llama3
+  - model_name: groq-gpt-oss
     litellm_params:
-      model: groq/llama3-8b-8192
+      model: groq/openai/gpt-oss-20b
       api_key: os.environ/GROQ_API_KEY
 
   # Local embeddings
   - model_name: local-embeddings
     litellm_params:
-      model: openai/text-embedding-ada-002
+      model: openai/BAAI/bge-small-en-v1.5
       api_base: "http://tei-embeddings:80"
       api_key: "dummy-key"
 
@@ -267,7 +267,7 @@ Content-Type: application/json
     {"role": "user", "content": "Explain quantum computing"}
   ],
   "temperature": 0.3,
-  "model": "groq-llama3"
+  "model": "groq-gpt-oss"
 }
 ```
 
@@ -283,6 +283,19 @@ POST /init-index      # Initialize search indexes
 - **ReDoc**: http://localhost:18000/redoc
 
 ## 🧪 Testing & Validation
+
+### Offline test suite (pytest)
+
+The `tests/unit` suite runs without any API key: embeddings come from LangChain's
+`DeterministicFakeEmbedding`, the LLM is a `FakeListChatModel` behind a fake LiteLLM endpoint and Redis is
+replaced by `fakeredis`. Only Meilisearch must be running, because hybrid search is computed by Meilisearch.
+
+```bash
+pip install -r backend/requirements-dev.txt
+docker compose up -d meilisearch meili-init
+make unit-test        # = pytest (tests marked `live` are skipped by default)
+```
+
 
 ### Automated Testing
 
@@ -378,16 +391,16 @@ Add new providers in `litellm/config.yaml`:
 
 ```yaml
 model_list:
-  # OpenAI GPT-4
-  - model_name: openai-gpt4
+  # OpenAI (default model recommended in the OpenAI docs)
+  - model_name: openai-gpt6
     litellm_params:
-      model: openai/gpt-4
+      model: openai/gpt-6-astra
       api_key: os.environ/OPENAI_API_KEY
 
   # Anthropic Claude
-  - model_name: claude-3
+  - model_name: claude-sonnet
     litellm_params:
-      model: anthropic/claude-3-sonnet
+      model: anthropic/claude-sonnet-5
       api_key: os.environ/ANTHROPIC_API_KEY
 ```
 
