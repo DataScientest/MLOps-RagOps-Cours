@@ -134,9 +134,9 @@ Edit `litellm/config.yaml` to customize:
 ```yaml
 model_list:
   # Primary chat/completions model on Groq
-  - model_name: groq-llama3
+  - model_name: groq-gpt-oss
     litellm_params:
-      model: groq/llama-3.1-8b-instant
+      model: groq/openai/gpt-oss-20b
       api_key: os.environ/GROQ_API_KEY
 
   # Local embeddings served by TEI (OpenAI-compatible embeddings API)
@@ -166,7 +166,7 @@ prompt_injection_params:
 # Routing / fallbacks
 router_settings:
   fallbacks:
-    - "groq-llama3": []
+    - "groq-gpt-oss": []
 ```
 
 ## 📊 Service Architecture
