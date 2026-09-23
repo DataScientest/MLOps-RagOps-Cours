@@ -164,27 +164,53 @@ REDIS_URL=redis://redis:6379
 Edit `litellm/config.yaml` to customize:
 
 ```yaml
+# LiteLLM Configuration for RAG stack (CPU-only) using Redis cache + TEI embeddings + Groq LLM
+
 model_list:
-  # Primary chat model
+  # Primary chat/completions model on Groq
   - model_name: groq-gpt-oss
     litellm_params:
       model: groq/openai/gpt-oss-20b
       api_key: os.environ/GROQ_API_KEY
+      reasoning_effort: low  # gpt-oss is a reasoning model: keep most of max_tokens for the answer
 
-  # Local embeddings
+  # Fallback chat model on Groq (separate rate limits)
+  - model_name: groq-gpt-oss-120b
+    litellm_params:
+      model: groq/openai/gpt-oss-120b
+      api_key: os.environ/GROQ_API_KEY
+      reasoning_effort: low
+
+  # Local embeddings served by TEI (OpenAI-compatible embeddings API)
   - model_name: local-embeddings
     litellm_params:
-      model: openai/BAAI/bge-small-en-v1.5
-      api_base: "http://tei-embeddings:80"
-      api_key: "dummy-key"
+      model: openai/BAAI/bge-small-en-v1.5  # informative only: TEI serves the model set by --model-id in docker-compose.yml
+      api_key: os.environ/GROQ_API_KEY
+      api_base: "http://tei-embeddings:80" # TEI service URL (container internal)
+      custom_llm_provider: openai
+      timeout: 60
 
-# Global settings
+# Global LiteLLM settings
 litellm_settings:
   cache: true
   cache_params:
     type: "redis"
     url: "redis://redis:6379"
     ttl: 1800
+    supported_call_types: ["completion", "chat_completion", "embedding", "acompletion", "aembedding"]
+  success_callback: ["langsmith"]
+  failure_callback: ["langsmith"]  
+
+# Prompt Injection basic guards
+prompt_injection_params:
+  heuristics_check: true
+  similarity_check: false
+  vector_db_check: false
+
+# Routing / fallbacks
+router_settings:
+  fallbacks:
+    - "groq-gpt-oss": ["groq-gpt-oss-120b"]
 ```
 
 ## 📊 Service Architecture
