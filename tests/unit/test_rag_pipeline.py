@@ -139,3 +139,15 @@ def test_embeddings_are_requested_in_batches_of_32(monkeypatch):
 
     assert sizes == [32, 32, 6]
     assert len(data) == 70
+
+
+def test_llm_failure_is_not_cached(client, ingested, monkeypatch):
+    import app.services.rag_service as rag_service
+
+    async def failing(query, context, search_method):
+        return "I found relevant chunks but could not generate an answer."
+
+    monkeypatch.setattr(rag_service, "generate_rag_answer", failing)
+    first = client.post("/search", json={"query": "What are autoencoders?", "k": 2}).json()
+    second = client.post("/search", json={"query": "What are autoencoders?", "k": 2}).json()
+    assert first["cached"] is False and second["cached"] is False
