@@ -114,7 +114,7 @@ MEILI_INDEX=documents
 EMBED_DIM=384
 
 # LLM Provider Configuration  
-LITELLM_KEY=your_proxy_key_here
+PROXY_KEY=your_proxy_key_here
 GROQ_API_KEY=your_groq_api_key_here
 
 # Optional: Additional LLM providers
