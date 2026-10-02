@@ -18,12 +18,12 @@ async def search_with_reranking(req: RerankRequest) -> Dict[str, Any]:
     async with httpx.AsyncClient(timeout=60) as client:
         q_resp = await client.post(
             f"{settings.PROXY_URL}/v1/embeddings",
-            json={"model": "local-embeddings", "input": req.query},
+            json={"model": settings.EMBEDDING_MODEL_NAME, "input": req.query},
             headers=headers
         )
         d_resp = await client.post(
             f"{settings.PROXY_URL}/v1/embeddings",
-            json={"model": "local-embeddings", "input": documents},
+            json={"model": settings.EMBEDDING_MODEL_NAME, "input": documents},
             headers=headers
         )
 
