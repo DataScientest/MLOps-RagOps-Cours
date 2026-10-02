@@ -1,8 +1,8 @@
-from langchain.document_loaders import PyPDFLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.schema import Document
+from pypdf import PdfReader
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_core.documents import Document
 import hashlib
-from typing import List
+from typing import List, Optional
 import os
 
 class PDFProcessor:
@@ -13,22 +13,24 @@ class PDFProcessor:
             separators=["\n\n", "\n", " ", ""]
         )
     
-    async def process_pdf(self, file_path: str, metadata: dict = None) -> List[Document]:
-        loader = PyPDFLoader(file_path)
-        pages = loader.load()
+    async def process_pdf(self, file_path: str, metadata: dict = None, source_name: Optional[str] = None) -> List[Document]:
+        # source_name: original file name, so that re-ingesting the same PDF gives the same chunk ids
+        source = source_name or file_path
+        reader = PdfReader(file_path)
+        pages = [page.extract_text() or "" for page in reader.pages]
         
         pdf_metadata = {
-            "source": file_path,
+            "source": source,
             "total_pages": len(pages),
             "file_type": "pdf",
             **(metadata or {})
         }
         
         chunks = []
-        for page_num, page in enumerate(pages):
-            page_chunks = self.text_splitter.split_text(page.page_content)
+        for page_num, page_text in enumerate(pages):
+            page_chunks = self.text_splitter.split_text(page_text)
             for chunk_idx, chunk_text in enumerate(page_chunks):
-                chunk_id = hashlib.md5(f"{file_path}_{page_num}_{chunk_idx}".encode()).hexdigest()
+                chunk_id = hashlib.md5(f"{source}_{page_num}_{chunk_idx}".encode()).hexdigest()
                 chunks.append(Document(
                     page_content=chunk_text,
                     metadata={

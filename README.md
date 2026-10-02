@@ -114,7 +114,7 @@ MEILI_INDEX=documents
 EMBED_DIM=384
 
 # LLM Provider Configuration  
-LITELLM_KEY=your_proxy_key_here
+PROXY_KEY=your_proxy_key_here
 GROQ_API_KEY=your_groq_api_key_here
 
 # Optional: Additional LLM providers
@@ -132,19 +132,29 @@ REDIS_URL=redis://redis:6379
 Edit `litellm/config.yaml` to customize:
 
 ```yaml
+# LiteLLM Configuration for RAG stack (CPU-only) using Redis cache + TEI embeddings + Groq LLM
+
 model_list:
   # Primary chat/completions model on Groq
-  - model_name: groq-llama3
+  - model_name: groq-gpt-oss
     litellm_params:
-      model: groq/llama-3.1-8b-instant
+      model: groq/openai/gpt-oss-20b
       api_key: os.environ/GROQ_API_KEY
+      reasoning_effort: low  # gpt-oss is a reasoning model: keep most of max_tokens for the answer
+
+  # Fallback chat model on Groq (separate rate limits)
+  - model_name: groq-gpt-oss-120b
+    litellm_params:
+      model: groq/openai/gpt-oss-120b
+      api_key: os.environ/GROQ_API_KEY
+      reasoning_effort: low
 
   # Local embeddings served by TEI (OpenAI-compatible embeddings API)
   - model_name: local-embeddings
     litellm_params:
-      model: openai/text-embedding-ada-002 
+      model: openai/BAAI/bge-small-en-v1.5  # informative only: TEI serves the model set by --model-id in docker-compose.yml
       api_key: os.environ/GROQ_API_KEY
-      api_base: "http://tei-embeddings:80"
+      api_base: "http://tei-embeddings:80" 
       custom_llm_provider: openai
       timeout: 60
 
@@ -166,7 +176,7 @@ prompt_injection_params:
 # Routing / fallbacks
 router_settings:
   fallbacks:
-    - "groq-llama3": []
+    - "groq-gpt-oss": ["groq-gpt-oss-120b"]
 ```
 
 ## 📊 Service Architecture
@@ -199,6 +209,19 @@ router_settings:
    ```
 
 ## 🧪 Testing & Validation
+
+### Offline test suite (pytest)
+
+The `tests/unit` suite runs without any API key: embeddings come from LangChain's
+`DeterministicFakeEmbedding`, the LLM is a `FakeListChatModel` behind a fake LiteLLM endpoint and Redis is
+replaced by `fakeredis`. Only Meilisearch must be running, because hybrid search is computed by Meilisearch.
+
+```bash
+pip install -r backend/requirements-dev.txt
+docker compose up -d meilisearch meili-init
+make unit-test        # = pytest (tests marked `live` are skipped by default)
+```
+
 ### Health Monitoring
 
 ```bash
@@ -353,7 +376,7 @@ Phase 3 will extend RAGOPS with advanced document processing capabilities and se
 ```
 
 ### Enhanced Data Flow
-1. **PDF Upload** → LangChain PyPDFLoader → Page extraction
+1. **PDF Upload** → pypdf `PdfReader` → Page extraction
 2. **Text Processing** → RecursiveCharacterTextSplitter → Smart chunking
 3. **Metadata Enrichment** → Page numbers, file info, structure
 4. **Existing Pipeline** → Embeddings → Meilisearch storage

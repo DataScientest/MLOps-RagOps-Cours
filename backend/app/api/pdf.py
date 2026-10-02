@@ -21,7 +21,7 @@ async def ingest_pdf(file: UploadFile = File(...), metadata: Optional[dict] = No
             tmp_path = tmp_file.name
 
         # Process into LangChain Documents
-        lc_documents = await pdf_processor.process_pdf(tmp_path, metadata)
+        lc_documents = await pdf_processor.process_pdf(tmp_path, metadata, source_name=file.filename)
 
         # Convert LangChain Document -> RagopsDocument
         ragops_docs = [
