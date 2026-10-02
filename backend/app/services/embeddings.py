@@ -6,7 +6,7 @@ from app.utils.hashing import md5_hash
 from app.utils.cache import get_json, set_json
 
 _CACHE_TTL = 3600  # seconds
-MAX_BATCH_SIZE = 32  # LiteLLM 
+MAX_BATCH_SIZE = 32  # TEI rejects requests with more than 32 inputs
 
 async def _request_embeddings(texts: List[str]) -> Optional[List[dict]]:
     all_data: List[dict] = []
@@ -18,7 +18,7 @@ async def _request_embeddings(texts: List[str]) -> Optional[List[dict]]:
         async with httpx.AsyncClient(timeout=60.0) as client:
             r = await client.post(
                 f"{settings.PROXY_URL}/v1/embeddings",
-                json={"model": "local-embeddings", "input": batch},
+                json={"model": settings.EMBEDDING_MODEL_NAME, "input": batch},
                 headers={"Content-Type": "application/json"}
             )
             if r.status_code != 200:

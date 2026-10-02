@@ -8,4 +8,4 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     messages: List[ChatMessage]
     temperature: Optional[float] = 0.2
-    model: Optional[str] = "groq-llama3"
+    model: Optional[str] = None  # defaults to settings.LITELLM_MODEL

@@ -3,8 +3,6 @@ from fastapi import FastAPI
 from app.core.config import settings
 from app.api import health, ingest, search, chat, stats, embeddings, pdf, batch_ingest, search_rerank
 
-# Prometheus instrumentation
-from prometheus_fastapi_instrumentator import Instrumentator
 
 app = FastAPI(title=settings.APP_NAME, version=settings.APP_VERSION)
 
@@ -18,12 +16,3 @@ app.include_router(embeddings.router, tags=["embeddings"])
 app.include_router(pdf.router, tags=["pdf"])
 app.include_router(batch_ingest.router, tags=["batch-ingest"])
 app.include_router(search_rerank.router, prefix="", tags=["search"])
-
-# Instrumentator: exposes /metrics, collects default HTTP metrics and process metrics
-instrumentator = Instrumentator(
-    should_group_status_codes=False,
-    should_ignore_untemplated=True,
-    should_respect_env_var=False,  # always enable
-)
-instrumentator.instrument(app).expose(app, include_in_schema=False, should_gzip=False)
-
