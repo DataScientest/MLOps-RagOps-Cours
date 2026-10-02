@@ -550,7 +550,7 @@ docker stats
 ## 📚 Technical Reference
 
 ### Model Configuration
-- **Embedding Model**: sentence-transformers/all-MiniLM-L6-v2
+- **Embedding Model**: BAAI/bge-small-en-v1.5
 - **Dimensions**: 384
 - **Languages**: 100+ supported
 - **Performance**: ~1000 embeddings/second

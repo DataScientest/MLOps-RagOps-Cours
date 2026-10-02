@@ -146,7 +146,7 @@ MEILI_INDEX=documents
 EMBED_DIM=384
 
 # LLM Provider Configuration  
-LITELLM_KEY=your_proxy_key_here
+PROXY_KEY=your_proxy_key_here
 GROQ_API_KEY=your_groq_api_key_here
 
 # Optional: Additional LLM providers
@@ -164,27 +164,53 @@ REDIS_URL=redis://redis:6379
 Edit `litellm/config.yaml` to customize:
 
 ```yaml
-model_list:
-  # Primary chat model
-  - model_name: groq-llama3
-    litellm_params:
-      model: groq/llama3-8b-8192
-      api_key: os.environ/GROQ_API_KEY
+# LiteLLM Configuration for RAG stack (CPU-only) using Redis cache + TEI embeddings + Groq LLM
 
-  # Local embeddings
+model_list:
+  # Primary chat/completions model on Groq
+  - model_name: groq-gpt-oss
+    litellm_params:
+      model: groq/openai/gpt-oss-20b
+      api_key: os.environ/GROQ_API_KEY
+      reasoning_effort: low  # gpt-oss is a reasoning model: keep most of max_tokens for the answer
+
+  # Fallback chat model on Groq (separate rate limits)
+  - model_name: groq-gpt-oss-120b
+    litellm_params:
+      model: groq/openai/gpt-oss-120b
+      api_key: os.environ/GROQ_API_KEY
+      reasoning_effort: low
+
+  # Local embeddings served by TEI (OpenAI-compatible embeddings API)
   - model_name: local-embeddings
     litellm_params:
-      model: openai/text-embedding-ada-002
-      api_base: "http://tei-embeddings:80"
-      api_key: "dummy-key"
+      model: openai/BAAI/bge-small-en-v1.5  # informative only: TEI serves the model set by --model-id in docker-compose.yml
+      api_key: os.environ/GROQ_API_KEY
+      api_base: "http://tei-embeddings:80" # TEI service URL (container internal)
+      custom_llm_provider: openai
+      timeout: 60
 
-# Global settings
+# Global LiteLLM settings
 litellm_settings:
   cache: true
   cache_params:
     type: "redis"
     url: "redis://redis:6379"
     ttl: 1800
+    supported_call_types: ["completion", "chat_completion", "embedding", "acompletion", "aembedding"]
+  success_callback: ["langsmith"]
+  failure_callback: ["langsmith"]  
+
+# Prompt Injection basic guards
+prompt_injection_params:
+  heuristics_check: true
+  similarity_check: false
+  vector_db_check: false
+
+# Routing / fallbacks
+router_settings:
+  fallbacks:
+    - "groq-gpt-oss": ["groq-gpt-oss-120b"]
 ```
 
 ## 📊 Service Architecture
@@ -267,7 +293,7 @@ Content-Type: application/json
     {"role": "user", "content": "Explain quantum computing"}
   ],
   "temperature": 0.3,
-  "model": "groq-llama3"
+  "model": "groq-gpt-oss"
 }
 ```
 
@@ -283,6 +309,19 @@ POST /init-index      # Initialize search indexes
 - **ReDoc**: http://localhost:18000/redoc
 
 ## 🧪 Testing & Validation
+
+### Offline test suite (pytest)
+
+The `tests/unit` suite runs without any API key: embeddings come from LangChain's
+`DeterministicFakeEmbedding`, the LLM is a `FakeListChatModel` behind a fake LiteLLM endpoint and Redis is
+replaced by `fakeredis`. Only Meilisearch must be running, because hybrid search is computed by Meilisearch.
+
+```bash
+pip install -r backend/requirements-dev.txt
+docker compose up -d meilisearch meili-init
+make unit-test        # = pytest (tests marked `live` are skipped by default)
+```
+
 
 ### Automated Testing
 
@@ -378,16 +417,16 @@ Add new providers in `litellm/config.yaml`:
 
 ```yaml
 model_list:
-  # OpenAI GPT-4
-  - model_name: openai-gpt4
+  # OpenAI (default model recommended in the OpenAI docs)
+  - model_name: openai-gpt6
     litellm_params:
-      model: openai/gpt-4
+      model: openai/gpt-6-astra
       api_key: os.environ/OPENAI_API_KEY
 
   # Anthropic Claude
-  - model_name: claude-3
+  - model_name: claude-sonnet
     litellm_params:
-      model: anthropic/claude-3-sonnet
+      model: anthropic/claude-sonnet-5
       api_key: os.environ/ANTHROPIC_API_KEY
 ```
 
@@ -435,7 +474,7 @@ model_list:
    ```bash
    # Use strong, unique keys
    MEILI_KEY=$(openssl rand -hex 32)
-   LITELLM_KEY=$(openssl rand -hex 32)
+   PROXY_KEY=$(openssl rand -hex 32)
    
    # Restrict network access
    # Configure firewall rules
