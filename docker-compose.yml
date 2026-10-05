@@ -46,9 +46,9 @@ services:
       start_period: 60s
 
   litellm:
-    image: ghcr.io/berriai/litellm:main-stable
+    image: ghcr.io/berriai/litellm:v1.104.0
     environment:
-      - LITELLM_PROXY_MASTER_KEY=${PROXY_KEY}
+      - LITELLM_MASTER_KEY=${PROXY_KEY}  # required: the proxy refuses to start without a master key
       - GROQ_API_KEY=${GROQ_API_KEY}
       - LANGSMITH_API_KEY=${LANGSMITH_API_KEY:-}     
       - LANGSMITH_PROJECT=${LANGSMITH_PROJECT:-ragops}
