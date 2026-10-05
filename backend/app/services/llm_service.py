@@ -14,7 +14,7 @@ async def generate_chat_completion(messages: List[ChatMessage], model: Optional[
             "temperature": temperature,
             "max_tokens": 2000
         }
-        r = await client.post(f"{settings.PROXY_URL}/v1/chat/completions", json=payload, headers={"Content-Type": "application/json"})
+        r = await client.post(f"{settings.PROXY_URL}/v1/chat/completions", json=payload, headers={"Content-Type": "application/json", "Authorization": f"Bearer {settings.PROXY_KEY}"})
         r.raise_for_status()
         return r.json()
 
@@ -32,7 +32,7 @@ async def generate_rag_answer(query: str, context: str, search_method: str) -> s
                 "temperature": 0.3,
                 "max_tokens": 500
             }
-            r = await client.post(f"{settings.PROXY_URL}/v1/chat/completions", json=payload, headers={"Content-Type": "application/json"})
+            r = await client.post(f"{settings.PROXY_URL}/v1/chat/completions", json=payload, headers={"Content-Type": "application/json", "Authorization": f"Bearer {settings.PROXY_KEY}"})
             if r.status_code == 200:
                 return r.json()["choices"][0]["message"]["content"]
             logger.error(f"LLM RAG failed: {r.text}")

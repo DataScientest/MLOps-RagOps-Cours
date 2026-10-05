@@ -87,13 +87,13 @@ cp .env.example .env
 
 ```bash
 # Start all services
-docker-compose up -d
+docker compose up -d
 
 # Check service health
-docker-compose ps
+docker compose ps
 
 # View logs
-docker-compose logs -f
+docker compose logs -f
 ```
 
 ### 3. Verify health
@@ -226,10 +226,10 @@ make unit-test        # = pytest (tests marked `live` are skipped by default)
 
 ```bash
 # Check all services
-docker-compose ps
+docker compose ps
 
 # View service logs
-docker-compose logs [service-name]
+docker compose logs [service-name]
 
 # Monitor resource usage
 docker stats
