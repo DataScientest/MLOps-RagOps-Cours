@@ -19,7 +19,7 @@ async def _request_embeddings(texts: List[str]) -> Optional[List[dict]]:
             r = await client.post(
                 f"{settings.PROXY_URL}/v1/embeddings",
                 json={"model": settings.EMBEDDING_MODEL_NAME, "input": batch},
-                headers={"Content-Type": "application/json"}
+                headers={"Content-Type": "application/json", "Authorization": f"Bearer {settings.PROXY_KEY}"}
             )
             if r.status_code != 200:
                 logger.error(f"Embedding request failed: {r.status_code} - {r.text}")
