@@ -70,6 +70,7 @@ def test_rag_endpoint_with_fake_llm(client, ingested, fake_llm):
     [call] = fake_llm.requests
     assert call["url"].endswith("/v1/chat/completions")
     assert call["payload"]["model"] == settings.LITELLM_MODEL
+    assert call["auth"] == f"Bearer {settings.PROXY_KEY}"  # LiteLLM master key
     assert "Context:" in call["payload"]["messages"][-1]["content"]
     # full chunk texts are returned for the RAGAS evaluation
     assert body["chunks"] and all(c in {d["text"] for d in DOCS} for c in call_contexts(client))
@@ -129,6 +130,7 @@ def test_embeddings_are_requested_in_batches_of_32(monkeypatch):
         payload = json.loads(request.content)
         sizes.append(len(payload["input"]))
         assert payload["model"] == settings.EMBEDDING_MODEL_NAME
+        assert request.headers["authorization"] == f"Bearer {settings.PROXY_KEY}"
         return httpx.Response(200, json={"data": [{"embedding": [0.0] * settings.EMBED_DIM} for _ in payload["input"]]})
 
     real_client = httpx.AsyncClient
