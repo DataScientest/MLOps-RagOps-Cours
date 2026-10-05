@@ -28,7 +28,8 @@ except ImportError:  # pragma: no cover
 os.environ["MEILI_URL"] = os.getenv("MEILI_TEST_URL", "http://localhost:7700")
 os.environ.setdefault("MEILI_KEY", _dotenv.get("MEILI_KEY") or "password123")
 os.environ.setdefault("REDIS_URL", "redis://localhost:6379/0")  # never reached: fakeredis
-os.environ.setdefault("PROXY_URL", "http://litellm.test:4000")  # never reached: fake LLM / embeddings
+os.environ.setdefault("PROXY_URL", "http://litellm.test:4000")
+os.environ.setdefault("PROXY_KEY", "sk-test-key")  # never reached: fake LLM / embeddings
 os.environ.setdefault("LITELLM_MODEL", "groq-gpt-oss")
 os.environ.setdefault("EMBEDDING_MODEL_NAME", "local-embeddings")
 os.environ.setdefault("EMBED_DIM", "384")
@@ -82,7 +83,7 @@ def fake_llm(monkeypatch):
 
     def handler(request: httpx.Request) -> httpx.Response:
         payload = json.loads(request.content)
-        requests.append({"url": str(request.url), "payload": payload})
+        requests.append({"url": str(request.url), "payload": payload, "auth": request.headers.get("authorization")})
         reply = model.invoke(convert_to_messages(payload["messages"]))
         return httpx.Response(200, json={
             "id": "fake", "object": "chat.completion", "model": payload["model"],
